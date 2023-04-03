@@ -3,50 +3,55 @@ import MQ
 import SwiftUI
 
 @MainActor @dynamicMemberLookup
-public final class MutableViewState<State>: Sendable
+public final class MutableViewState<State>: AnyViewState, Sendable
 where State: Equatable & Sendable {
 
-	internal let stateWillChange: PassthroughSubject<State, Never>
+	public nonisolated var objectWillChange: AnyPublisher<State, Never> {
+		self.updatesPublisher
+			.removeDuplicates()
+			.eraseToAnyPublisher()
+	}
+	internal let updatesPublisher: AnyPublisher<State, Never>
 	private let read: @MainActor () -> State
 	private let write: @MainActor (State) -> Void
 
-	public nonisolated init(
+	public nonisolated init<UpdatesPublisher>(
+		read: @escaping @MainActor () -> State,
+		write: @escaping @MainActor (State) -> Void,
+		updates: UpdatesPublisher // should emit before each change and always on MainActor
+	) where UpdatesPublisher: Publisher, UpdatesPublisher.Output == State, UpdatesPublisher.Failure == Never {
+		self.read = read
+		self.write = write
+		self.updatesPublisher = updates.eraseToAnyPublisher()
+	}
+
+	public nonisolated convenience init(
 		initial: State
 	) {
+		// access isolated by MainActor, no need to synchronize with lock
 		var state: State = initial
 		let updatesSubject: PassthroughSubject<State, Never> = .init()
-		self.read = { state }
-		self.write = { (newValue: State) in
-			updatesSubject.send(newValue)
-			state = newValue
-		}
-		self.stateWillChange = updatesSubject
+		self.init(
+			read: { state },
+			write: { (newValue: State) in
+				updatesSubject.send(newValue)
+				state = newValue
+			},
+			updates: updatesSubject
+		)
 	}
 
 	// stateless - does nothing
-	public nonisolated init() where State == Never {
-		self.read = always(unreachable("Can't read Never"))
-		self.write = noop
-		self.stateWillChange = .init()
+	public nonisolated convenience init()
+	where State == Never {
+		self.init(
+			read: always(unreachable("Can't read Never")),
+			write: noop,
+			updates: Empty(completeImmediately: true)
+		)
 	}
 
-	// placeholder - crashes when used
-	fileprivate nonisolated init(
-		file: StaticString,
-		line: UInt
-	) {
-		self.read = unimplemented0(
-			file: file,
-			line: line
-		)
-		self.write = unimplemented1(
-			file: file,
-			line: line
-		)
-		self.stateWillChange = .init()
-	}
-
-	public private(set) var value: State {
+	public private(set) var current: State {
 		get { self.read() }
 		set { self.write(newValue) }
 	}
@@ -55,7 +60,7 @@ where State: Equatable & Sendable {
 	public subscript<Value>(
 		dynamicMember keyPath: KeyPath<State, Value>
 	) -> Value {
-		self.value[keyPath: keyPath]
+		self.current[keyPath: keyPath]
 	}
 }
 
@@ -64,8 +69,8 @@ extension MutableViewState {
 	public func update<Returned>(
 		_ mutation: (inout State) throws -> Returned
 	) rethrows -> Returned {
-		var copy: State = self.value
-		defer { self.value = copy }
+		var copy: State = self.current
+		defer { self.current = copy }
 
 		return try mutation(&copy)
 	}
@@ -74,16 +79,16 @@ extension MutableViewState {
 		_ keyPath: WritableKeyPath<State, Value>,
 		to value: Value
 	) {
-		self.value[keyPath: keyPath] = value
+		self.current[keyPath: keyPath] = value
 	}
 
 	public func binding<BindingValue>(
 		to keyPath: WritableKeyPath<State, BindingValue>
 	) -> Binding<BindingValue> {
 		Binding<BindingValue>(
-			get: { self.value[keyPath: keyPath] },
+			get: { self.current[keyPath: keyPath] },
 			set: { (newValue: BindingValue) in
-				self.value[keyPath: keyPath] = newValue
+				self.current[keyPath: keyPath] = newValue
 			}
 		)
 	}
@@ -96,18 +101,5 @@ extension MutableViewState: Equatable {
 		rhs: MutableViewState<State>
 	) -> Bool {
 		lhs === rhs
-	}
-}
-
-extension MutableViewState {
-
-	public nonisolated static func placeholder(
-		file: StaticString = #fileID,
-		line: UInt = #line
-	) -> Self {
-		.init(
-			file: file,
-			line: line
-		)
 	}
 }

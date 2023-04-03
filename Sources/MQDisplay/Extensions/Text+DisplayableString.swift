@@ -2,7 +2,7 @@ import MQ
 import SwiftUI
 
 extension Text {
-
+	
 	public init(
 		displayable: DisplayableString
 	) {
