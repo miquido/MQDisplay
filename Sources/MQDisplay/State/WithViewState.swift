@@ -1,16 +1,16 @@
 import SwiftUI
 
-public struct WithViewState<Controller, ObservedState, ContentView>: View
-where Controller: ViewController, ObservedState: Equatable, ContentView: View {
+public struct WithViewState<ViewState, ContentView>: View
+where ViewState: AnyViewState, ContentView: View {
 
-	@StateObject private var observedState: ObservableViewState<Controller.ViewState, ObservedState>
-	private let content: (ObservedState) -> ContentView
+	@StateObject private var observedState: ViewState
+	private let content: (ViewState.State) -> ContentView
 
-	public init(
+	public init<Controller, SourceState, ContentState>(
 		from controller: Controller,
-		at keyPath: KeyPath<Controller.ViewState, ObservedState>,
-		@ViewBuilder content: @escaping (ObservedState) -> ContentView
-	) {
+		at keyPath: KeyPath<SourceState, ContentState>,
+		@ViewBuilder content: @escaping (ContentState) -> ContentView
+	) where Controller: ViewController, Controller.ViewState == MutableViewState<SourceState>, ViewState == ObservableViewState<SourceState, ContentState> {
 		self._observedState = .init(
 			wrappedValue: .init(
 				from: controller.viewState,
@@ -20,20 +20,17 @@ where Controller: ViewController, ObservedState: Equatable, ContentView: View {
 		self.content = content
 	}
 
-	public init(
+	public init<Controller>(
 		from controller: Controller,
-		@ViewBuilder content: @escaping (ObservedState) -> ContentView
-	) where Controller.ViewState == ObservedState {
+		@ViewBuilder content: @escaping (ViewState.State) -> ContentView
+	) where Controller: ViewController, ViewState == Controller.ViewState {
 		self._observedState = .init(
-			wrappedValue: .init(
-				from: controller.viewState,
-				at: \.self
-			)
+			wrappedValue: controller.viewState
 		)
 		self.content = content
 	}
 
 	public var body: some View {
-		self.content(self.observedState.state)
+		self.content(self.observedState.current)
 	}
 }

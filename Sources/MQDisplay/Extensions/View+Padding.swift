@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension View {
-
+	
 	public func padding(
 		top: CGFloat = 0,
 		leading: CGFloat = 0,

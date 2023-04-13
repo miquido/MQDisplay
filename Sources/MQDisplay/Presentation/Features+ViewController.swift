@@ -1,7 +1,7 @@
 import MQDo
 
 extension Features {
-
+	
 	@_transparent
 	public func instance<Controller>(
 		of: Controller.Type = Controller.self,
@@ -18,7 +18,7 @@ extension Features {
 		}
 		catch {
 			throw
-				error
+			error
 				.asTheError()
 				.appending(
 					.message(
@@ -37,7 +37,7 @@ extension Features {
 				)
 		}
 	}
-
+	
 	@_transparent
 	public func instance<Controller>(
 		of: Controller.Type = Controller.self,
