@@ -3,26 +3,21 @@ import MQ
 import SwiftUI
 
 @MainActor @dynamicMemberLookup
-public final class MutableViewState<State>: AnyViewState, Sendable
+public final class MutableViewState<State>: ViewStateSource, Sendable
 where State: Equatable & Sendable {
 
-	public nonisolated var objectWillChange: AnyPublisher<State, Never> {
-		self.updatesPublisher
-			.removeDuplicates()
-			.eraseToAnyPublisher()
-	}
-	internal let updatesPublisher: AnyPublisher<State, Never>
+	public nonisolated let stateWillChange: AnyPublisher<State, Never>
 	private let read: @MainActor () -> State
 	private let write: @MainActor (State) -> Void
 
 	public nonisolated init<UpdatesPublisher>(
 		read: @escaping @MainActor () -> State,
 		write: @escaping @MainActor (State) -> Void,
-		updates: UpdatesPublisher // should emit before each change and always on MainActor
+		updates: UpdatesPublisher  // should emit before each change and always on MainActor
 	) where UpdatesPublisher: Publisher, UpdatesPublisher.Output == State, UpdatesPublisher.Failure == Never {
 		self.read = read
 		self.write = write
-		self.updatesPublisher = updates.eraseToAnyPublisher()
+		self.stateWillChange = updates.eraseToAnyPublisher()
 	}
 
 	public nonisolated convenience init(
@@ -38,16 +33,6 @@ where State: Equatable & Sendable {
 				state = newValue
 			},
 			updates: updatesSubject
-		)
-	}
-
-	// stateless - does nothing
-	public nonisolated convenience init()
-	where State == Never {
-		self.init(
-			read: always(unreachable("Can't read Never")),
-			write: noop,
-			updates: Empty(completeImmediately: true)
 		)
 	}
 
@@ -91,15 +76,5 @@ extension MutableViewState {
 				self.current[keyPath: keyPath] = newValue
 			}
 		)
-	}
-}
-
-extension MutableViewState: Equatable {
-
-	public nonisolated static func == (
-		lhs: MutableViewState<State>,
-		rhs: MutableViewState<State>
-	) -> Bool {
-		lhs === rhs
 	}
 }
