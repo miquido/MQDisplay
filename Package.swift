@@ -1,15 +1,15 @@
-// swift-tools-version: 5.7
+// swift-tools-version: 5.8
 
 import PackageDescription
 
 let package = Package(
 	name: "MQDisplay",
 	platforms: [
-		.iOS(.v14),
-		.macOS(.v12),
-		.macCatalyst(.v14),
-		.watchOS(.v7),
-		.tvOS(.v14),
+		.iOS(.v15),
+		.macOS(.v13),
+		.macCatalyst(.v15),
+		.watchOS(.v8),
+		.tvOS(.v15),
 	],
 	products: [
 		.library(
@@ -28,7 +28,11 @@ let package = Package(
 	dependencies: [
 		.package(
 			url: "https://github.com/miquido/MQDo.git",
-			from: "0.9.1"
+			from: "0.10.0"
+		),
+		.package(
+			url: "https://github.com/miquido/MQ-iOS.git",
+			from: "0.11.0"
 		)
 	],
 	targets: [
@@ -40,6 +44,10 @@ let package = Package(
 					name: "MQDummy",
 					package: "MQDo"
 				),
+				.product(
+					name: "MQ",
+					package: "mq-ios"
+				),
 			]
 		),
 		.testTarget(
@@ -50,6 +58,10 @@ let package = Package(
 				.product(
 					name: "MQDummy",
 					package: "MQDo"
+				),
+				.product(
+					name: "MQ",
+					package: "mq-ios"
 				),
 			]
 		),
@@ -64,6 +76,10 @@ let package = Package(
 				.product(
 					name: "MQAssert",
 					package: "MQDo"
+				),
+				.product(
+					name: "MQ",
+					package: "mq-ios"
 				),
 				"MQDisplay",
 			]

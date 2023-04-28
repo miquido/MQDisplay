@@ -7,7 +7,7 @@ public protocol ViewController: AnyObject, Equatable {
 	
 	associatedtype Context = Void
 	associatedtype State: Equatable & Sendable = Never
-	associatedtype ViewState: AnyViewState<State> = StatelessViewState
+	associatedtype ViewState: ViewStateSource<State> = StatelessViewState
 	
 	var viewState: ViewState { get }
 	
@@ -23,7 +23,7 @@ extension ViewController {
 		lhs: Self,
 		rhs: Self
 	) -> Bool {
-		lhs.viewState === rhs.viewState
+		lhs === rhs
 	}
 }
 
@@ -37,19 +37,13 @@ where ViewState == MutableViewState<State> {
 	}
 }
 
-extension ViewController
-where ViewState == StatelessViewState {
-	
-	public var viewState: ViewState { .init() }
-}
-
 #if DEBUG
 
 import MQDummy
 
 extension ViewController {
 	
-	public static func preview(
+	internal static func preview(
 		with context: Context,
 		featurePatches: (FeaturePatches) -> Void,
 		file: StaticString = #fileID,
@@ -79,20 +73,6 @@ extension ViewController {
 					message: "Preview can't be prepared!"
 				)
 		}
-	}
-	
-	public static func preview(
-		featurePatches: (FeaturePatches) -> Void,
-		file: StaticString = #fileID,
-		line: UInt = #line
-	) -> Self
-	where Self.Context == Void {
-		Self.preview(
-			with: Void(),
-			featurePatches: featurePatches,
-			file: file,
-			line: line
-		)
 	}
 }
 

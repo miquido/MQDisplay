@@ -2,7 +2,7 @@ import MQDo
 
 extension Features {
 	
-	@_transparent
+  @inline(__always) @_transparent
 	public func instance<Controller>(
 		of: Controller.Type = Controller.self,
 		context: Controller.Context,
@@ -38,7 +38,7 @@ extension Features {
 		}
 	}
 	
-	@_transparent
+  @inline(__always) @_transparent
 	public func instance<Controller>(
 		of: Controller.Type = Controller.self,
 		file: StaticString = #fileID,
