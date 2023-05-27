@@ -1,16 +1,16 @@
 import SwiftUI
 
-public struct WithViewState<ViewState, ContentView>: View
-where ViewState: AnyViewState, ContentView: View {
+public struct WithViewState<StateSource, State, ContentView>: View
+where StateSource: ViewStateSource, State: Equatable & Sendable, ContentView: View {
 
-	@StateObject private var observedState: ViewState
-	private let content: (ViewState.State) -> ContentView
+	@StateObject private var observedState: ObservableViewState<StateSource, State>
+	private let content: (State) -> ContentView
 
-	public init<Controller, SourceState, ContentState>(
+	public init<Controller>(
 		from controller: Controller,
-		at keyPath: KeyPath<SourceState, ContentState>,
-		@ViewBuilder content: @escaping (ContentState) -> ContentView
-	) where Controller: ViewController, Controller.ViewState == MutableViewState<SourceState>, ViewState == ObservableViewState<SourceState, ContentState> {
+		at keyPath: KeyPath<StateSource.State, State>,
+		@ViewBuilder content: @escaping (State) -> ContentView
+	) where Controller: ViewController, Controller.ViewState == StateSource {
 		self._observedState = .init(
 			wrappedValue: .init(
 				from: controller.viewState,
@@ -22,10 +22,40 @@ where ViewState: AnyViewState, ContentView: View {
 
 	public init<Controller>(
 		from controller: Controller,
-		@ViewBuilder content: @escaping (ViewState.State) -> ContentView
-	) where Controller: ViewController, ViewState == Controller.ViewState {
+		@ViewBuilder content: @escaping (State) -> ContentView
+	) where Controller: ViewController, State == StateSource.State, StateSource == Controller.ViewState {
 		self._observedState = .init(
-			wrappedValue: controller.viewState
+			wrappedValue: .init(
+				from: controller.viewState,
+				at: \.self
+			)
+		)
+		self.content = content
+	}
+
+	public init(
+		using stateSource: StateSource,
+		at keyPath: KeyPath<StateSource.State, State>,
+		@ViewBuilder content: @escaping (State) -> ContentView
+	) {
+		self._observedState = .init(
+			wrappedValue: .init(
+				from: stateSource,
+				at: keyPath
+			)
+		)
+		self.content = content
+	}
+
+	public init(
+		using stateSource: StateSource,
+		@ViewBuilder content: @escaping (State) -> ContentView
+	) where StateSource.State == State {
+		self._observedState = .init(
+			wrappedValue: .init(
+				from: stateSource,
+				at: \.self
+			)
 		)
 		self.content = content
 	}
