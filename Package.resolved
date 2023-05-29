@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/miquido/MQDo.git",
       "state" : {
-        "revision" : "b251004a54227e878db318f01a69f4d79a01ddb1",
-        "version" : "0.10.0"
+        "revision" : "26ca0643550146214a94cc389414480439026990",
+        "version" : "0.10.1"
       }
     }
   ],
