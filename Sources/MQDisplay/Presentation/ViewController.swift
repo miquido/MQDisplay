@@ -4,32 +4,39 @@ import MQDo
 // Same instance should not be reused between multiple
 // views - it should uniquely identify a view on display.
 public protocol ViewController: AnyObject, Equatable {
-	
+
 	associatedtype Context = Void
 	associatedtype State: Equatable & Sendable = Never
-	associatedtype ViewState: AnyViewState<State> = StatelessViewState
-	
+	associatedtype ViewState: ViewStateSource<State> = StatelessViewState
+
 	var viewState: ViewState { get }
-	
+
 	init(
 		with context: Context,
 		using features: Features
 	) throws
 }
 
+extension ViewController
+where ViewState == StatelessViewState {
+
+	// this will create new instance each time accessed but it is stateless indeed
+	public var viewState: StatelessViewState { .init() }
+}
+
 extension ViewController {
-	
+
 	public static func == (
 		lhs: Self,
 		rhs: Self
 	) -> Bool {
-		lhs.viewState === rhs.viewState
+		lhs === rhs
 	}
 }
 
 extension ViewController
 where ViewState == MutableViewState<State> {
-	
+
 	@MainActor public func binding<Value>(
 		to keyPath: WritableKeyPath<State, Value>
 	) -> Binding<Value> {
@@ -37,19 +44,13 @@ where ViewState == MutableViewState<State> {
 	}
 }
 
-extension ViewController
-where ViewState == StatelessViewState {
-	
-	public var viewState: ViewState { .init() }
-}
-
 #if DEBUG
 
 import MQDummy
 
 extension ViewController {
-	
-	public static func preview(
+
+	internal static func preview(
 		with context: Context,
 		featurePatches: (FeaturePatches) -> Void,
 		file: StaticString = #fileID,
@@ -79,20 +80,6 @@ extension ViewController {
 					message: "Preview can't be prepared!"
 				)
 		}
-	}
-	
-	public static func preview(
-		featurePatches: (FeaturePatches) -> Void,
-		file: StaticString = #fileID,
-		line: UInt = #line
-	) -> Self
-	where Self.Context == Void {
-		Self.preview(
-			with: Void(),
-			featurePatches: featurePatches,
-			file: file,
-			line: line
-		)
 	}
 }
 

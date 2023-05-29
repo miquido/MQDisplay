@@ -3,7 +3,7 @@ import SwiftUI
 #if os(iOS) || os(tvOS)
 
 public final class BridgingViewController<HostedView: ControlledView>: UIHostingController<HostedView> {
-	
+
 	public static func bridging(
 		_ view: HostedView.Type,
 		controller: HostedView.Controller
@@ -19,7 +19,7 @@ public final class BridgingViewController<HostedView: ControlledView>: UIHosting
 }
 
 extension UIViewController {
-	
+
 	public static func bridging<HostedView: ControlledView>(
 		_ view: HostedView.Type,
 		controller: HostedView.Controller
@@ -35,7 +35,7 @@ extension UIViewController {
 #elseif os(macOS)
 
 public final class BridgingViewController<HostedView: ControlledView>: NSHostingController<HostedView> {
-	
+
 	public static func bridging(
 		_ view: HostedView.Type,
 		controller: HostedView.Controller

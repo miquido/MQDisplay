@@ -1,25 +1,25 @@
 import Combine
 
-public final class ObservableViewState<SourceState, ObservedState>: AnyViewState
-where SourceState: Equatable & Sendable, ObservedState: Equatable & Sendable {
-	
+public final class ObservableViewState<Source, ObservedState>: ObservableObject
+where Source: ViewStateSource, ObservedState: Equatable & Sendable {
+
 	public let objectWillChange:
-	Publishers.RemoveDuplicates<Publishers.MapKeyPath<AnyPublisher<SourceState, Never>, ObservedState>>
-	private let source: MutableViewState<SourceState>
-	private let keyPath: KeyPath<SourceState, ObservedState>
-	
+		Publishers.RemoveDuplicates<Publishers.MapKeyPath<Source.StateChangesPublisher, ObservedState>>
+	private let source: Source
+	private let keyPath: KeyPath<Source.State, ObservedState>
+
 	internal nonisolated init(
-		from source: MutableViewState<SourceState>,
-		at keyPath: KeyPath<SourceState, ObservedState>
+		from source: Source,
+		at keyPath: KeyPath<Source.State, ObservedState>
 	) {
 		self.source = source
 		self.keyPath = keyPath
 		self.objectWillChange = source
-			.updatesPublisher
+			.stateWillChange
 			.map(keyPath)
 			.removeDuplicates()
 	}
-	
+
 	@MainActor public var current: ObservedState {
 		self.source.current[keyPath: keyPath]
 	}

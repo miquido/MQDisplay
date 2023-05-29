@@ -4,13 +4,13 @@ import MQDisplay
 
 final class WelcomeViewController: ViewController {
 
-	struct ViewState: Equatable {
+	struct State: Equatable {
 
 		var title: DisplayableString
 		var counter: Int
 	}
 
-	let viewState: MutableViewState<ViewState>
+	let viewState: MutableViewState<State>
 
 	init(
 		with context: Void,
@@ -62,7 +62,7 @@ struct WelcomeView: ControlledView {
 				from: self.controller,
 				at: \.counter
 			) { counter in
-				Text(displayable: "\(localized: "counter.prefix", bundle: .main) \(counter)")
+        Text(displayable: "\(localized: "counter.prefix", bundle: .main) \(counter)")
 			}
 
 			Button(
@@ -113,10 +113,9 @@ PlaygroundPage.current.liveView = try BridgingViewController
 internal struct WelcomeView_Previews: PreviewProvider {
 
 	internal static var previews: some View {
-		WelcomeView(
-			controller: .preview { (patches: FeaturePatches) in
+		WelcomeView
+      .preview { (patches: FeaturePatches) in
 				// patch dependencies here
 			}
-		)
 	}
 }
